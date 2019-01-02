@@ -111,27 +111,22 @@ namespace mnistReader {
 
   void getKeyIn(int &input, std::atomic<bool> &flag, std::atomic<bool> &changed) {
     while (flag) {
-      int c = 0;
-      c = getch();
-      std::string user_input(1, (char)c);
-      std::stringstream ss;
-      ss << user_input;  // put char string into ss
-      const char *DIGITS = "0123456789";
+      // std::string user_input;
+      // std::cin >> user_input;
+      std::string user_input(1, (char)getch());
+      const char* DIGITS = "0123456789";
       size_t notaDigit = user_input.find_first_not_of(DIGITS);
-      while (notaDigit != std::string::npos && flag) {
-        std::string user_input2(1, (char)getch());
-        notaDigit = user_input2.find_first_not_of(DIGITS);
-        ss << user_input2;  // put char string into ss
+      if(notaDigit == std::string::npos) {
+        int user_int = 0;
+        std::stringstream ss;
+        ss << user_input;
+        ss >> user_int;
+        input = user_int;
+        changed = true;
       }
-
-      // if you get here, all chars are digits, so convert to integer.
-      int user_int = 0;
-      ss >> user_int;  // extract and convert to integer
-      // discard and cleanup the stringstream at scope end
-      input = user_int;
-      changed = true;
     }
   }
+
 } // namespace mnistReader
 
 int main(int argc, char *argv[]) {
