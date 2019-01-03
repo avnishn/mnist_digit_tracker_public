@@ -5,6 +5,11 @@ from std_msgs.msg import String
 from sensor_msgs.msg import Image
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
+import tensorflow as tf
+from tensorflow.python.saved_model import tag_constants
+from matplotlib import pyplot as plt
+from random import randint
+import numpy
 
 def callback(data):
     rospy.loginfo(rospy.get_caller_id() + 'I heard %s', data.data)
@@ -29,6 +34,16 @@ class image_converter:
 
     self.bridge = CvBridge()
     self.image_sub = rospy.Subscriber("mnist_image",Image,self.callback)
+    self.graph = tf.Graph()
+    self.sess = tf.Session(graph=self.graph)
+    model_path = "./src/mnist_trained_network/model"
+    tf.saved_model.loader.load(self.sess,
+                              [tag_constants.SERVING],
+                              model_path
+                              )
+    pred2 = self.graph.get_tensor_by_name("out:0")
+    x = self.graph.get_tensor_by_name('x:0')
+    self.tensors = (pred2, x)
 
   def callback(self,data):
     try:
@@ -39,6 +54,14 @@ class image_converter:
 
     cv2.imshow("Image window", cv_image)
     cv2.waitKey(100)
+    model_path = "./model"  
+    resized_image = cv2.resize(cv_image, (28, 28))
+    #print(numpy.asarray(resized_image).ravel())
+   
+    classification = self.sess.run(tf.argmax(self.tensors[0], 1), \
+                                            feed_dict={self.tensors[1]:\
+                                             [numpy.asarray(resized_image).ravel()]})
+    
 
 
 if __name__ == '__main__':
