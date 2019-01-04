@@ -10,6 +10,7 @@ from tensorflow.python.saved_model import tag_constants
 from matplotlib import pyplot as plt
 from random import randint
 import numpy
+import sys
 
 def callback(data):
     rospy.loginfo(rospy.get_caller_id() + 'I heard %s', data.data)
@@ -52,8 +53,6 @@ class image_converter:
       print(e)
 
 
-    cv2.imshow("Image window", cv_image)
-    cv2.waitKey(100)
     model_path = "./model"  
     resized_image = cv2.resize(cv_image, (28, 28))
     #print(numpy.asarray(resized_image).ravel())
@@ -61,6 +60,16 @@ class image_converter:
     classification = self.sess.run(tf.argmax(self.tensors[0], 1), \
                                             feed_dict={self.tensors[1]:\
                                              [numpy.asarray(resized_image).ravel()]})
+    
+    _, contours, hierarchy = cv2.findContours(cv_image.copy(), \
+      cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    
+    #cv2.imshow("Image window", cv_image)
+    #
+    cv2.drawContours(cv_image, contours, -1, (255,255,0), 3)
+    cv2.imshow("Image window", cv_image)
+    cv2.waitKey(100)
+
     
 
 
