@@ -12,25 +12,9 @@ from random import randint
 import numpy
 import sys
 
-def callback(data):
-    rospy.loginfo(rospy.get_caller_id() + 'I heard %s', data.data)
 
-def imageRetrieve():
-
-    # In ROS, nodes are uniquely named. If two nodes with the same
-    # name are launched, the previous one is kicked off. The
-    # anonymous=True flag means that rospy will choose a unique
-    # name for our 'listener' node so that multiple listeners can
-    # run simultaneously.
-    rospy.init_node('mnist_image_subscriber', anonymous=False)
-
-    rospy.Subscriber('mnist_image', String, callback)
-
-    # spin() simply keeps python from exiting until this node is stopped
-    rospy.spin()
-
+# converts image to cv2 format and then an image classifier is run on it
 class image_converter:
-
   def __init__(self):
 
     self.bridge = CvBridge()
@@ -42,35 +26,28 @@ class image_converter:
                               [tag_constants.SERVING],
                               model_path
                               )
+    # input tensor, x
     pred2 = self.graph.get_tensor_by_name("out:0")
+    # output tensor, pred
     x = self.graph.get_tensor_by_name('x:0')
     self.tensors = (pred2, x)
 
+  # rosnode callback, accepts, converts, classifies image, and finding image contours
   def callback(self,data):
     try:
       cv_image = self.bridge.imgmsg_to_cv2(data, "mono8")
     except CvBridgeError as e:
       print(e)
-
- 
     resized_image = cv2.resize(cv_image, (28, 28))
-    #print(numpy.asarray(resized_image).ravel())
-   
     classification = self.sess.run(tf.argmax(self.tensors[0], 1), \
-                                            feed_dict={self.tensors[1]:\
-                                             [numpy.asarray(resized_image).ravel()]})
-    
+                                        feed_dict={self.tensors[1]:\
+                                        [numpy.asarray(resized_image).ravel()]})
     _, contours, hierarchy = cv2.findContours(cv_image.copy(), \
       cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
-    #cv2.imshow("Image window", cv_image)
-    #
     cv2.drawContours(cv_image, contours, -1, (255,255,0), 3)
     cv2.imshow("Image window", cv_image)
     cv2.waitKey(100)
-
-    
-
 
 if __name__ == '__main__':
   ic = image_converter()
