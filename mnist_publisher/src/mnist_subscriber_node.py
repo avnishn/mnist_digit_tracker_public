@@ -52,8 +52,7 @@ class image_converter:
     except CvBridgeError as e:
       print(e)
 
-
-    model_path = "./model"  
+ 
     resized_image = cv2.resize(cv_image, (28, 28))
     #print(numpy.asarray(resized_image).ravel())
    
