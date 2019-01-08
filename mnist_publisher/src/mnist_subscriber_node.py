@@ -69,6 +69,8 @@ class trajectoryDisplayer(object):
     self.marker.color.r = 1.0
     self.marker.color.g = 1.0
     self.marker.color.b = 0.0
+    self.marker.lifetime = rospy.Duration.from_sec(1)
+    self.marker.ns = 'testline'
 
      # marker orientaiton
     self.marker.pose.orientation.x = 0.0
@@ -82,9 +84,18 @@ class trajectoryDisplayer(object):
     self.marker.pose.position.z = 0.0
 
     self.marker.points = []
-  def addContourPointsAndPublish(self, contours):
-    for contour in contours:
 
+  def addContourPointsAndPublish(self, contours):
+    del self.marker.points[:]
+    for contour in contours:
+      for unpack in contour:
+        for c in unpack:
+          p = Point()
+          p.x = float (c[0]*0.05)
+          p.y = float (c[1]*-0.05)
+          p.z = 0
+          self.marker.points.append(p)
+    self.markerPub.publish(self.marker)
   # clear all of the previous markers
   def clearPrevious(self):
     self.marker.action = self.marker.DELETEALL
@@ -95,8 +106,7 @@ class trajectoryDisplayer(object):
 class image_converter:
   def __init__(self):
     # currently used for displaying trajectory
-    self.ik = DynamicsAndKinematics(0.8,0.8)
-
+    self.trajectoryDisp = trajectoryDisplayer()
     self.bridge = CvBridge()
     self.image_sub = rospy.Subscriber("mnist_image",Image,self.callback)
     self.graph = tf.Graph()
@@ -111,6 +121,7 @@ class image_converter:
     # output tensor, pred
     x = self.graph.get_tensor_by_name('x:0')
     self.tensors = (pred2, x)
+    self.prevContours = numpy.empty(2)
 
   # rosnode callback, accepts, converts, classifies image, and finding image contours
   def callback(self,data):
@@ -127,13 +138,15 @@ class image_converter:
     cv2.drawContours(cv_image, contours, -1, (255,255,0), 3)
     cv2.imshow("Image window", cv_image)
     cv2.waitKey(100)
-
+    #self.trajectoryDisp.clearPrevious()
+    self.trajectoryDisp.addContourPointsAndPublish(contours)
 
 
 if __name__ == '__main__':
   ic = image_converter()
+  ik = DynamicsAndKinematics(0.8,0.8)
   rospy.init_node('mnist_image_subscriber', anonymous=False)
-  rospy.Rate(50)
+  rospy.Rate(1)
   try:
     rospy.spin()
   except KeyboardInterrupt:
