@@ -1,9 +1,0 @@
-controller_list:
-  - name: fake_arm_controller
-    joints:
-      - link1__link2
-      - link2__link3
-      - link3__link4
-  - name: fake_end_effector_controller
-    joints:
-      - link3__link4

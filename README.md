@@ -1,7 +1,31 @@
-# reslProject
+# mnist publisher and subscriber
+
 Write 2 ROS nodes in a single ROS package. 
+************************************
+# Installation
+Dependencies: Ros melodic, Opencv 3.2
+
+To install, clone this repo into your ros workspace and move all of the files inside the cloned repo into the src/ directory of your catkin_ws (Working on making this more intuitive)
 
 ************************************
+# How to Run
+
+Before Starting, source your devel/setup.bash every time you open a new terminal
+Then run catkin_make from your catkin_workspace directory
+
+Work In progress, there are currently no launch files to make this process easier, coming sometime today, 1/8
+
+1) Start Roscore in one terminal
+2) In another terminal enter your catkin wkspc directory and type rosrun mnist_publisher mnist_publisher_node. This will run the publisher node. To exit the publisher node, type in ^c and then hit enter (this is a bug, you have to hit enter afterwards)
+3) In another terminal enter the following: rosrun tf2_ros static_transforpublisher 0 0 0 0 0 0 world my_fixed_frame
+4) In another terminal enter the following: rosrun mnist_publisher mnist_subscriber_node.py
+5) Launch rviz and do the following: 
+   1) under global options, change fixed frame to "my_fixed_frame" 
+   2) add a marker display, and for the marker topic enter /robotMarker
+6) In the termnial with your publisher node, you should be able to enter a number, and see the contour of the corresponding mnist image displayed in rviz
+************************************
+
+# Project Instructions
 Node 1: MNIST publisher (C++)
 - the node is supposed to read a key 0 .. 9 from the keyboard and publish the corresponding image of a digit from MNIST dataset.
 - everytime the user presses a digit it should randomize digit from the corresponding digit class.
