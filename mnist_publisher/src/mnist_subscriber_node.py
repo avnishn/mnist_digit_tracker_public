@@ -10,6 +10,7 @@ from tensorflow.python.saved_model import tag_constants
 from matplotlib import pyplot as plt
 from random import randint
 import numpy
+import math
 import sys
 
 
@@ -48,6 +49,42 @@ class image_converter:
     cv2.drawContours(cv_image, contours, -1, (255,255,0), 3)
     cv2.imshow("Image window", cv_image)
     cv2.waitKey(100)
+
+class DynamicsAndKinematics(object):
+  
+  def __init__ (self, lenArm0, lenArm1):
+    self.lenArm0 = lenArm0
+    self.lenArm1 = lenArm1
+
+  #inverse kinematics equations for 2 link manipulator
+  def ik(self, x, y):
+    l_0 = self.lenArm0
+    l_1 = self.lenArm1
+    dist = math.sqrt(x**2 + y**2)
+    gamma = math.acos((dist**2 + l_0**2 - l_1**2) // (2*l_0*dist))
+    theta1 = math.atan2(y,x) - gamma
+    a, b = y - (l_0 * math.sin(theta1)), x - (l_0 * math.cos(theta1))
+    theta2 = math.atan2(a,b) - theta1
+    return theta1, theta2
+  
+  # simulate first order dynamics from one joint state to the next
+  # return 2 arrays of joint angles that the manipulator should take 
+  # on at every iteration, till reaching the proper position.
+  def lowPassFilter(self, beginning_orientation, end_point, a = 0.3):
+    end_angles = self.ik(end_point[0], end_point[1])
+    curr_x = beginning_orientation[0]
+    curr_y = beginning_orientation[0]
+    x = [curr_x]
+    y = [curr_y]
+
+    while( not ( (end_point[1]-0.01 <= curr_y <= end_point[1] + 0.01) and \
+                  (end_point[0]-0.01 <= curr_x <= end_point[0] + 0.01)) ):
+      curr_y = a * end_point[1] + (1-a) * curr_y
+      curr_x = a * end_point[0] + (1-a) * curr_x
+      print(curr_x, curr_y)
+      x.append(curr_x)
+      y.append(curr_y)
+    return x, y
 
 if __name__ == '__main__':
   ic = image_converter()
