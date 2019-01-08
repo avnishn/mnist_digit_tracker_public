@@ -57,14 +57,12 @@ class trajectoryDisplayer(object):
   def __init__(self):
     self.markerPub = rospy.Publisher('robotMarker', Marker, queue_size=10)
     self.marker = Marker()
-    self.marker.header.frame_id = "/my_fixed_frame"
+    self.marker.header.frame_id = "/base_link"
     self.marker.type = self.marker.LINE_STRIP
     self.marker.action = self.marker.ADD
-
-    self.marker.scale.x = 0.1
-    self.marker.scale.y = 0.1
-    self.marker.scale.z = 0.1
-
+    self.marker.scale.x = 0.05
+    self.marker.scale.y = 0.05
+    self.marker.scale.z = 0.05
     self.marker.color.a = 1.0
     self.marker.color.r = 1.0
     self.marker.color.g = 1.0
@@ -91,8 +89,8 @@ class trajectoryDisplayer(object):
       for unpack in contour:
         for c in unpack:
           p = Point()
-          p.x = float (c[0]*0.05)
-          p.y = float (c[1]*-0.05)
+          p.x = float (c[0]*0.03)
+          p.y = float (c[1]*0.03)
           p.z = 0
           self.marker.points.append(p)
     self.markerPub.publish(self.marker)
