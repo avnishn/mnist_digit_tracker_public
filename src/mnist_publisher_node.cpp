@@ -130,7 +130,7 @@ namespace mnistReader {
 } // namespace mnistReader
 
 int main(int argc, char *argv[]) {
-  std::string currentPath = ros::package::getPath("mnist_publisher");
+  std::string currentPath = ros::package::getPath("mnist_digit_tracker");
   std::string label_filename = currentPath + "/include/mnist_publisher/t10k-labels-idx1-ubyte";
   std::string image_filename = currentPath + "/include/mnist_publisher/t10k-images-idx3-ubyte";
   std::vector<std::vector<cv::Mat>> imagesVec = mnistReader::read_mnist_cv(image_filename.c_str(), label_filename.c_str());

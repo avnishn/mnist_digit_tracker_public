@@ -111,9 +111,9 @@ class image_converter:
     self.image_sub = rospy.Subscriber("mnist_image",Image,self.imageConverterCallback)
     self.graph = tf.Graph()
     self.sess = tf.Session(graph=self.graph)
-    #model_path = "./src/mnist_trained_network/model"
+    
     rospack = rospkg.RosPack()
-    model_path = rospack.get_path("mnist_publisher") + "/mnist_trained_network/model"
+    model_path = rospack.get_path("mnist_digit_tracker") + "/mnist_trained_network/model"
     tf.saved_model.loader.load(self.sess,
                               [tag_constants.SERVING],
                               model_path
