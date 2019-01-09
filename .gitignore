@@ -1,2 +1,1 @@
-CMakeLists.txt
-mnist_publisher/urdf/urdf-viz
+urdf/urdf-viz
