@@ -55,9 +55,6 @@ optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 # Initialize the variables (i.e. assign their default value)
 init = tf.global_variables_initializer()
 
-# 'Saver' op to save and restore all the variables
-saver = tf.train.Saver()
-
 # Running first session
 print("Starting 1st session...")
 with tf.Session() as sess:
@@ -92,8 +89,6 @@ with tf.Session() as sess:
     # Save model weights to disk
     input_dict = {"x":x, "y":y}
     output_dict = {"output": pred}
-    # save_path = saver.save(sess, model_path)
-    # print("Model saved in file: %s" % save_path)
     tf.saved_model.simple_save(
                 sess, model_path, input_dict, output_dict
             )
