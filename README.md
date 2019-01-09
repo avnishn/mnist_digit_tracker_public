@@ -16,13 +16,12 @@ Then run catkin_make from your catkin_workspace directory
 Work In progress, there are currently no launch files to make this process easier, coming sometime today, 1/8
 
 1) Start Roscore in one terminal
-2) In another terminal enter your catkin wkspc directory and type rosrun mnist_publisher mnist_publisher_node. This will run the publisher node. To exit the publisher node, type in ^c and then hit enter (this is a bug, you have to hit enter afterwards)
-3) In another terminal enter the following: rosrun tf2_ros static_transforpublisher 0 0 0 0 0 0 world my_fixed_frame
-4) In another terminal enter the following: rosrun mnist_publisher mnist_subscriber_node.py
-5) Launch rviz and do the following: 
-   1) under global options, change fixed frame to "my_fixed_frame" 
-   2) add a marker display, and for the marker topic enter /robotMarker
-6) In the termnial with your publisher node, you should be able to enter a number, and see the contour of the corresponding mnist image displayed in rviz
+2) In another terminal enter your catkin wkspc directory and
+   1) launch the mnist publisher node: rosrun mnist_publisher mnist_publisher_node
+   2) To exit the publisher node, type in ^c and then hit enter (this is a bug, you have to hit enter afterwards)
+3) In another terminal enter the following: rosrun mnist_publisher mnist_subscriber_node.py
+5) In another terminal, launch  rviz: roslaunch mnist_publisher rviz.launch
+6) In the termnial with your mnist_publisher_node, you should be able to enter a number, and see the contour of the corresponding mnist image displayed in rviz.
 ************************************
 
 # Project Instructions
