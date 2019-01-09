@@ -1,4 +1,5 @@
 #include <ros/ros.h>
+#include <ros/package.h>
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
 #include <termios.h>
@@ -19,6 +20,7 @@
 // accessible list of opencv mat objects
 namespace mnistReader {
 
+  // a helper function when parsing through mnist data
   uint32_t swap_endian(uint32_t val) {
     val = ((val << 8) & 0xFF00FF00) | ((val >> 8) & 0xFF00FF);
     return (val << 16) | (val >> 16);
@@ -111,8 +113,6 @@ namespace mnistReader {
 
   void getKeyIn(int &input, std::atomic<bool> &flag, std::atomic<bool> &changed) {
     while (flag) {
-      // std::string user_input;
-      // std::cin >> user_input;
       std::string user_input(1, (char)getch());
       const char* DIGITS = "0123456789";
       size_t notaDigit = user_input.find_first_not_of(DIGITS);
@@ -130,11 +130,11 @@ namespace mnistReader {
 } // namespace mnistReader
 
 int main(int argc, char *argv[]) {
-  std::string label_filename = "./src/mnist_publisher/include/mnist_publisher/t10k-labels-idx1-ubyte";
-  std::string image_filename = "./src/mnist_publisher/include/mnist_publisher/t10k-images-idx3-ubyte";
+  std::string currentPath = ros::package::getPath("mnist_publisher");
+  std::string label_filename = currentPath + "/include/mnist_publisher/t10k-labels-idx1-ubyte";
+  std::string image_filename = currentPath + "/include/mnist_publisher/t10k-images-idx3-ubyte";
   std::vector<std::vector<cv::Mat>> imagesVec = mnistReader::read_mnist_cv(image_filename.c_str(), label_filename.c_str());
   ros::init(argc, argv, "image_publisher", ros::init_options::NoSigintHandler);
-  // ros::init(argc, argv, "image_publisher");
   ros::NodeHandle nh;
   image_transport::ImageTransport it(nh);
   image_transport::Publisher pub = it.advertise("mnist_image", 1);
