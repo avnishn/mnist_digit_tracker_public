@@ -5,6 +5,7 @@ from std_msgs.msg import String
 from sensor_msgs.msg import Image
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Point
+import rospkg
 
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
@@ -53,6 +54,7 @@ class DynamicsAndKinematics(object):
       y.append(curr_y)
     return x, y
 
+# this displays the trajectory associated with the current number
 class trajectoryDisplayer(object):
   def __init__(self):
     self.markerPub = rospy.Publisher('robotMarker', Marker, queue_size=10)
@@ -109,7 +111,9 @@ class image_converter:
     self.image_sub = rospy.Subscriber("mnist_image",Image,self.callback)
     self.graph = tf.Graph()
     self.sess = tf.Session(graph=self.graph)
-    model_path = "./src/mnist_trained_network/model"
+    #model_path = "./src/mnist_trained_network/model"
+    rospack = rospkg.RosPack()
+    model_path = rospack.get_path("mnist_publisher") + "/mnist_trained_network/model"
     tf.saved_model.loader.load(self.sess,
                               [tag_constants.SERVING],
                               model_path
@@ -131,6 +135,7 @@ class image_converter:
     classification = self.sess.run(tf.argmax(self.tensors[0], 1), \
                                         feed_dict={self.tensors[1]:\
                                         [numpy.asarray(resized_image).ravel()]})
+    
     _, contours, hierarchy = cv2.findContours(cv_image.copy(), \
       cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     cv2.drawContours(cv_image, contours, -1, (255,255,0), 3)
@@ -144,7 +149,7 @@ if __name__ == '__main__':
   ic = image_converter()
   ik = DynamicsAndKinematics(0.8,0.8)
   rospy.init_node('mnist_image_subscriber', anonymous=False)
-  rospy.Rate(1)
+  rospy.Rate(50)
   try:
     rospy.spin()
   except KeyboardInterrupt:
