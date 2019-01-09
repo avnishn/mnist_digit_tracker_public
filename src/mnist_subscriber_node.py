@@ -104,26 +104,39 @@ class trajectoryDisplayer(object):
 
 # converts image to cv2 format and then an image classifier is run on it
 class image_converter:
+
   def __init__(self):
     # currently used for displaying trajectory
     self.trajectoryDisp = trajectoryDisplayer()
     self.bridge = CvBridge()
     self.image_sub = rospy.Subscriber("mnist_image",Image,self.imageConverterCallback)
-    self.graph = tf.Graph()
-    self.sess = tf.Session(graph=self.graph)
-    
+    self.graph, self.sess, self.tensors = self.constructGraph()
+    self.prevContours = numpy.empty(2)
+
+  # reconstruct graph from pretrained mnist classifier model  
+  def constructGraph(self):
+    graph = tf.Graph()
+    sess = tf.Session(graph=graph)
     rospack = rospkg.RosPack()
     model_path = rospack.get_path("mnist_digit_tracker") + "/mnist_trained_network/model"
-    tf.saved_model.loader.load(self.sess,
+    tf.saved_model.loader.load(sess,
                               [tag_constants.SERVING],
                               model_path
                               )
     # input tensor, x
-    pred2 = self.graph.get_tensor_by_name("out:0")
+    pred2 = graph.get_tensor_by_name("out:0")
     # output tensor, pred
-    x = self.graph.get_tensor_by_name('x:0')
-    self.tensors = (pred2, x)
-    self.prevContours = numpy.empty(2)
+    x = graph.get_tensor_by_name('x:0')
+    tensors = (pred2, x)
+    return graph, sess, tensors
+
+  def getContoursAndDisplay(self, cv_image):
+    _, contours, _ = cv2.findContours(cv_image.copy(), \
+      cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    cv2.drawContours(cv_image, contours, -1, (255,255,0), 3)
+    cv2.imshow("Image window", cv_image)
+    cv2.waitKey(100)
+    return contours
 
   # rosnode callback, accepts, converts, classifies image, and finding image contours
   def imageConverterCallback(self,data):
@@ -135,13 +148,8 @@ class image_converter:
     classification = self.sess.run(tf.argmax(self.tensors[0], 1), \
                                         feed_dict={self.tensors[1]:\
                                         [numpy.asarray(resized_image).ravel()]})
-    
-    _, contours, hierarchy = cv2.findContours(cv_image.copy(), \
-      cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    cv2.drawContours(cv_image, contours, -1, (255,255,0), 3)
-    cv2.imshow("Image window", cv_image)
-    cv2.waitKey(100)
-    #self.trajectoryDisp.clearPrevious()
+
+    contours = self.getContoursAndDisplay(cv_image)
     self.trajectoryDisp.addContourPointsAndPublish(contours)
 
 
