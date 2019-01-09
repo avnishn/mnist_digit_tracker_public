@@ -17,8 +17,8 @@ Work In progress, there are currently no launch files to make this process easie
 
 1) Start Roscore in one terminal
 2) In another terminal enter your catkin wkspc directory and
-   1) launch the mnist publisher node: rosrun mnist_digit_tracker mnist_publisher_node
-   2) To exit the publisher node, type in ^c and then hit enter (this is a bug, you have to hit enter afterwards)
+   - launch the mnist publisher node: rosrun mnist_digit_tracker mnist_publisher_node
+   - To exit the publisher node, type in ^c and then hit enter (this is a bug, you have to hit enter afterwards)
 3) In another terminal enter the following: rosrun mnist_digit_tracker mnist_subscriber_node.py
 5) In another terminal, launch  rviz: roslaunch mnist_digit_tracker rviz.launch
 6) In the termnial with your mnist_publisher_node, you should be able to enter a number, and see the contour of the corresponding mnist image displayed in rviz.
