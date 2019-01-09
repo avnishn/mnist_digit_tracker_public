@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>mnist_publisher</name>
+  <name>mnist_digit_tracker</name>
   <version>0.0.0</version>
-  <description>The mnist_publisher package</description>
+  <description>The mnist_digit_tracker package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
