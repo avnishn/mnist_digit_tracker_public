@@ -14,10 +14,14 @@ from cv_bridge import CvBridge, CvBridgeError
 import tensorflow as tf
 from tensorflow.python.saved_model import tag_constants
 from matplotlib import pyplot as plt
+
 from random import randint
-import numpy
+import numpy as np
 import math
 import sys
+from collections import deque
+
+import simplejson
 
 # an object to calculate the inverse kinematics of a point, 
 # and simulate the first order dynamics of a 2 link manipulator
@@ -28,47 +32,70 @@ class DynamicsAndKinematics(object):
 
   #inverse kinematics equations for 2 link manipulator
   def ik(self, x, y):
-    l_0 = self.lenArm0
-    l_1 = self.lenArm1
-    dist = math.sqrt(x**2 + y**2)
-    gamma = math.acos((dist**2 + l_0**2 - l_1**2) // (2*l_0*dist))
-    theta1 = math.atan2(y,x) - gamma
-    a, b = y - (l_0 * math.sin(theta1)), x - (l_0 * math.cos(theta1))
-    theta2 = math.atan2(a,b) - theta1
-    return theta2, theta1
+    l1 = self.lenArm0
+    l2 = self.lenArm1
+
+    dist = np.sqrt(np.square(x)+np.square(y))
+    gamma = np.arccos( np.divide( (np.square(dist)+np.square(l1)-np.square(l2)), (2*l1*dist) ) )
+    theta1 = np.arctan2(y,x) - gamma
+
+    theta2 = np.arctan2((y - (l1 * np.sin(theta1))), (x - (l1 * np.cos(theta1)))) - theta1
+    return theta1, theta2
 
   # simulate first order dynamics from one joint state to the next
   # return 2 arrays of joint angles that the manipulator should take 
   # on at every iteration, till reaching the proper position.
-  def lowPassFilter(self, beginning_orientation, end_point, a = 0.3):
-    end_angles = self.ik(end_point[0], end_point[1])
+  def lowPassFilter(self, beginning_orientation, end_angles, a = 0.3):
+    # end_angles = self.ik(end_point[0], end_point[1])
     curr_x = beginning_orientation[0]
-    curr_y = beginning_orientation[0]
-    x = [curr_x]
-    y = [curr_y]
+    curr_y = beginning_orientation[1]
+    coordinates = [(curr_x, curr_y)]
 
     while( not ( (end_angles[1]-0.01 <= curr_y <= end_angles[1] + 0.01) and \
                   (end_angles[0]-0.01 <= curr_x <= end_angles[0] + 0.01)) ):
       curr_y = a * end_angles[1] + (1-a) * curr_y
       curr_x = a * end_angles[0] + (1-a) * curr_x
-      print(curr_x, curr_y)
-      x.append(curr_x)
-      y.append(curr_y)
-    return x, y
+      coordinates.append((curr_x,curr_y))
+      
+    with open('a.txt', 'a') as f:
+      simplejson.dump(coordinates, f)
+
+    return coordinates
+
 
   # publish a single joint state message
   def sendJointState(self, theta1, theta2):
-    pub = rospy.Publisher('joint_states', JointState, queue_size=10)
+    pub = rospy.Publisher('mnist_joint_publisher', JointState, queue_size=200)
     rate = rospy.Rate(10)
     joint_msg = JointState()
     joint_msg.header = Header()
     joint_msg.header.stamp = rospy.Time.now()
-    joint_msg.name = ["base_link__link_2", "link_2__link_3"]
+    joint_msg.name = ["joint0", "joint1"]
     joint_msg.position = [theta1, theta2]
     joint_msg.velocity = []
     joint_msg.effort = []
     pub.publish(joint_msg)
     rate.sleep()
+  
+  def move(self,contours):
+    coordinates = [(0,0)]
+    if contours is not None:
+      for contour in contours:
+        for unpack in contour:
+          for c in unpack:
+            x = float(c[0]*0.03)
+            y = float(c[1]*0.03)
+            theta1, theta2 = self.ik(x,y)
+            coordinates.append((theta1,theta2))
+
+    filteredCoordinates = []
+    for i in range(1,len(coordinates)):
+      filteredCoordinates.extend(self.lowPassFilter(coordinates[i-1], coordinates[i]))
+
+    for c in filteredCoordinates:
+      theta1, theta2 = c[0], c[1]
+      self.sendJointState(theta1, theta2)
+    return coordinates
 
 # this displays the trajectory associated with the current number
 class trajectoryDisplayer(object):
@@ -103,15 +130,18 @@ class trajectoryDisplayer(object):
 
   def addContourPointsAndPublish(self, contours):
     del self.marker.points[:]
-    for contour in contours:
-      for unpack in contour:
-        for c in unpack:
-          p = Point()
-          p.x = float (c[0]*0.03)
-          p.y = float (c[1]*0.03)
-          p.z = 0
-          self.marker.points.append(p)
-    self.markerPub.publish(self.marker)
+    if contours is not None:
+      for contour in contours:
+        for unpack in contour:
+          for c in unpack:
+            p = Point()
+            p.x = float (c[0]*0.03)
+            p.y = float (c[1]*0.03)
+            p.z = 0
+            self.marker.points.append(p)
+      if not rospy.is_shutdown():
+        self.markerPub.publish(self.marker)
+
   # clear all of the previous markers
   def clearPrevious(self):
     self.marker.action = self.marker.DELETEALL
@@ -127,7 +157,10 @@ class image_converter:
     self.bridge = CvBridge()
     self.image_sub = rospy.Subscriber("mnist_image",Image,self.imageConverterCallback)
     self.graph, self.sess, self.tensors = self.constructGraph()
-    self.prevContours = numpy.empty(2)
+    
+    self.currContour = None
+    self.currNumber = None
+    self.changedFlag = False
 
   # reconstruct graph from pretrained mnist classifier model  
   def constructGraph(self):
@@ -163,22 +196,28 @@ class image_converter:
     resized_image = cv2.resize(cv_image, (28, 28))
     classification = self.sess.run(tf.argmax(self.tensors[0], 1), \
                                         feed_dict={self.tensors[1]:\
-                                        [numpy.asarray(resized_image).ravel()]})
-    rospy.loginfo("classified as the number %d", int(classification))
+                                        [np.asarray(resized_image).ravel()]})
 
-    contours = self.getContoursAndDisplay(cv_image)
-    self.trajectoryDisp.addContourPointsAndPublish(contours)
+    self.currContour = self.getContoursAndDisplay(cv_image)
+    self.currNumber = int(classification)
+    self.trajectoryDisp.addContourPointsAndPublish(self.currContour)
 
 
 if __name__ == '__main__':
   # link1, link2 Len = 2.2 m
+  rospy.init_node('mnist_image_subscriber', anonymous=False)
   ik = DynamicsAndKinematics(2.2, 2.2)
   ic = image_converter()
-
-  rospy.init_node('mnist_image_subscriber2', anonymous=False)
-  rospy.Rate(50)
-  try:
-    rospy.spin()
-  except KeyboardInterrupt:
-    print("Shutting down")
+  rospy.Rate(100)
+  while not rospy.is_shutdown():
+    # get the current contour and numbers
+    contours = ic.currContour
+    number = ic.currNumber
+    #if number is not None:
+      #rospy.loginfo("classified as the number %d", number) 
+    # publish the trajectory
+    #trajDisp.addContourPointsAndPublish(contours)
+    # move the robot
+    coordinates= ik.move(contours)
+    #ik.sendJointState(0.5,0.5)
   cv2.destroyAllWindows()
