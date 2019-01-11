@@ -1,0 +1,9 @@
+<launch>
+    <param name="robot_description" command="$(find xacro)/xacro '$(find mnist_digit_tracker)/urdf/mrm.xacro'"/>
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher"/>
+    <node name="rviz" pkg="rviz" type="rviz" args="-d '$(find mnist_digit_tracker)/launch/config.rviz'" />   
+    <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" >
+        <rosparam param="source_list">["mnist_joint_publisher"]</rosparam>
+        <param name="use_gui" value="False"/>
+    </node> 
+</launch>
