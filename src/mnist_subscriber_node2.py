@@ -14,10 +14,12 @@ from cv_bridge import CvBridge, CvBridgeError
 import tensorflow as tf
 from tensorflow.python.saved_model import tag_constants
 from matplotlib import pyplot as plt
+
 from random import randint
 import numpy
 import math
 import sys
+from collections import deque
 
 # an object to calculate the inverse kinematics of a point, 
 # and simulate the first order dynamics of a 2 link manipulator
@@ -56,9 +58,10 @@ class DynamicsAndKinematics(object):
       y.append(curr_y)
     return x, y
 
+
   # publish a single joint state message
   def sendJointState(self, theta1, theta2):
-    pub = rospy.Publisher('joint_states', JointState, queue_size=10)
+    pub = rospy.Publisher('joint_states', JointState, queue_size=200)
     rate = rospy.Rate(10)
     joint_msg = JointState()
     joint_msg.header = Header()
@@ -69,6 +72,16 @@ class DynamicsAndKinematics(object):
     joint_msg.effort = []
     pub.publish(joint_msg)
     rate.sleep()
+  
+  def move(self,contours):
+    if contours is not None:
+      for contour in contours:
+        for unpack in contour:
+          for c in unpack:
+            x = float (c[0]*0.03)
+            y = float (c[1]*0.03)
+            theta1, theta2 = self.ik(x,y)
+            self.sendJointState(theta1, theta2)
 
 # this displays the trajectory associated with the current number
 class trajectoryDisplayer(object):
@@ -103,15 +116,17 @@ class trajectoryDisplayer(object):
 
   def addContourPointsAndPublish(self, contours):
     del self.marker.points[:]
-    for contour in contours:
-      for unpack in contour:
-        for c in unpack:
-          p = Point()
-          p.x = float (c[0]*0.03)
-          p.y = float (c[1]*0.03)
-          p.z = 0
-          self.marker.points.append(p)
-    self.markerPub.publish(self.marker)
+    if contours is not None:
+      for contour in contours:
+        for unpack in contour:
+          for c in unpack:
+            p = Point()
+            p.x = float (c[0]*0.03)
+            p.y = float (c[1]*0.03)
+            p.z = 0
+            self.marker.points.append(p)
+      self.markerPub.publish(self.marker)
+
   # clear all of the previous markers
   def clearPrevious(self):
     self.marker.action = self.marker.DELETEALL
@@ -123,11 +138,14 @@ class image_converter:
 
   def __init__(self):
     # currently used for displaying trajectory
-    self.trajectoryDisp = trajectoryDisplayer()
+    # self.trajectoryDisp = trajectoryDisplayer()
     self.bridge = CvBridge()
     self.image_sub = rospy.Subscriber("mnist_image",Image,self.imageConverterCallback)
     self.graph, self.sess, self.tensors = self.constructGraph()
-    self.prevContours = numpy.empty(2)
+    
+    self.currContour = None
+    self.currNumber = None
+    self.changedFlag = False
 
   # reconstruct graph from pretrained mnist classifier model  
   def constructGraph(self):
@@ -164,21 +182,30 @@ class image_converter:
     classification = self.sess.run(tf.argmax(self.tensors[0], 1), \
                                         feed_dict={self.tensors[1]:\
                                         [numpy.asarray(resized_image).ravel()]})
-    rospy.loginfo("classified as the number %d", int(classification))
 
-    contours = self.getContoursAndDisplay(cv_image)
-    self.trajectoryDisp.addContourPointsAndPublish(contours)
+    self.currContour = self.getContoursAndDisplay(cv_image)
+    self.currNumber = int(classification)
+    # self.trajectoryDisp.addContourPointsAndPublish(self.currContour)
 
 
 if __name__ == '__main__':
   # link1, link2 Len = 2.2 m
   ik = DynamicsAndKinematics(2.2, 2.2)
   ic = image_converter()
-
+  trajDisp = trajectoryDisplayer()
+  
   rospy.init_node('mnist_image_subscriber', anonymous=False)
-  rospy.Rate(50)
-  try:
-    rospy.spin()
-  except KeyboardInterrupt:
-    print("Shutting down")
+  rospy.Rate(10)
+
+  while not rospy.is_shutdown():
+    # get the current contour and numbers
+    contours = ic.currContour
+    number = ic.currNumber
+    if number is not None:
+      rospy.loginfo("classified as the number %d", number) 
+    # publish the trajectory
+    trajDisp.addContourPointsAndPublish(contours)
+    # move the robot
+    #ik.move(contours)
+    ik.sendJointState(0.5,0.5)
   cv2.destroyAllWindows()
