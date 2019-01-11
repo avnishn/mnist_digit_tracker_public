@@ -2,11 +2,12 @@ cmake_minimum_required(VERSION 2.8.3)
 project(mnist_digit_tracker)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
+set(OpenCV_DIR /opt/ros/kinetic/share/OpenCV-3.3.1-dev/)
 find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   image_transport
@@ -125,6 +126,7 @@ catkin_package(
 include_directories(
 # include
   ${catkin_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
