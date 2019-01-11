@@ -3,7 +3,7 @@
 Write 2 ROS nodes in a single ROS package. 
 ************************************
 # Installation
-Dependencies: Ros melodic, Opencv 3.2
+Dependencies: Ros melodic, Opencv, TensorFlow
 
 To install, clone this repo into your ros workspace src/ directory
 
