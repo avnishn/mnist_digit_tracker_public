@@ -16,7 +16,7 @@ from tensorflow.python.saved_model import tag_constants
 from matplotlib import pyplot as plt
 
 from random import randint
-import numpy
+import numpy as np
 import math
 import sys
 from collections import deque
@@ -30,13 +30,20 @@ class DynamicsAndKinematics(object):
 
   #inverse kinematics equations for 2 link manipulator
   def ik(self, x, y):
-    l_0 = self.lenArm0
-    l_1 = self.lenArm1
-    dist = math.sqrt(x**2 + y**2)
-    gamma = math.acos((dist**2 + l_0**2 - l_1**2) // (2*l_0*dist))
-    theta1 = math.atan2(y,x) - gamma
-    a, b = y - (l_0 * math.sin(theta1)), x - (l_0 * math.cos(theta1))
-    theta2 = math.atan2(a,b) - theta1
+    l1 = self.lenArm0
+    l2 = self.lenArm1
+
+    dist = np.sqrt(np.square(x)+np.square(y))
+    gamma = np.arccos( np.divide( (np.square(dist)+np.square(l1)-np.square(l2)), (2*l1*dist) ) )
+    theta1 = np.arctan2(y,x) - gamma
+
+    theta2 = np.arctan2((y - (l1 * np.sin(theta1))), (x - (l1 * np.cos(theta1)))) - theta1
+
+    fwdX = l1*np.cos(theta2) + l2*np.cos(theta1+theta2)
+    fwdy = l1*np.sin(theta2) + l2*np.sin(theta1+theta2)
+    print (x, fwdX)
+    print (y, fwdy)
+
     return theta1, theta2
 
   # simulate first order dynamics from one joint state to the next
@@ -53,7 +60,6 @@ class DynamicsAndKinematics(object):
                   (end_angles[0]-0.01 <= curr_x <= end_angles[0] + 0.01)) ):
       curr_y = a * end_angles[1] + (1-a) * curr_y
       curr_x = a * end_angles[0] + (1-a) * curr_x
-      print(curr_x, curr_y)
       x.append(curr_x)
       y.append(curr_y)
     return x, y
@@ -61,27 +67,30 @@ class DynamicsAndKinematics(object):
 
   # publish a single joint state message
   def sendJointState(self, theta1, theta2):
-    pub = rospy.Publisher('joint_states', JointState, queue_size=200)
+    pub = rospy.Publisher('mnist_joint_publisher', JointState, queue_size=200)
     rate = rospy.Rate(10)
     joint_msg = JointState()
     joint_msg.header = Header()
     joint_msg.header.stamp = rospy.Time.now()
-    joint_msg.name = ["base_link__link_2", "link_2__link_3"]
+    joint_msg.name = ["joint0", "joint1"]
     joint_msg.position = [theta1, theta2]
     joint_msg.velocity = []
-    joint_msg.effort = []
+    joint_msg.effort = [] 
     pub.publish(joint_msg)
     rate.sleep()
   
   def move(self,contours):
+    coordinates = []
     if contours is not None:
       for contour in contours:
         for unpack in contour:
           for c in unpack:
-            x = float (c[0]*0.03)
-            y = float (c[1]*0.03)
+            x = float(c[0]*0.03)
+            y = float(c[1]*0.03)
             theta1, theta2 = self.ik(x,y)
+            coordinates.append((theta1,theta2))
             self.sendJointState(theta1, theta2)
+    return coordinates
 
 # this displays the trajectory associated with the current number
 class trajectoryDisplayer(object):
@@ -121,8 +130,8 @@ class trajectoryDisplayer(object):
         for unpack in contour:
           for c in unpack:
             p = Point()
-            p.x = float (c[0]*0.03)
-            p.y = float (c[1]*0.03)
+            p.x = float (c[0]*0.05)
+            p.y = float (c[1]*0.05)
             p.z = 0
             self.marker.points.append(p)
       self.markerPub.publish(self.marker)
@@ -181,7 +190,7 @@ class image_converter:
     resized_image = cv2.resize(cv_image, (28, 28))
     classification = self.sess.run(tf.argmax(self.tensors[0], 1), \
                                         feed_dict={self.tensors[1]:\
-                                        [numpy.asarray(resized_image).ravel()]})
+                                        [np.asarray(resized_image).ravel()]})
 
     self.currContour = self.getContoursAndDisplay(cv_image)
     self.currNumber = int(classification)
@@ -195,17 +204,16 @@ if __name__ == '__main__':
   trajDisp = trajectoryDisplayer()
   
   rospy.init_node('mnist_image_subscriber', anonymous=False)
-  rospy.Rate(10)
-
+  rospy.Rate(100)
   while not rospy.is_shutdown():
     # get the current contour and numbers
     contours = ic.currContour
     number = ic.currNumber
-    if number is not None:
-      rospy.loginfo("classified as the number %d", number) 
+    #if number is not None:
+      #rospy.loginfo("classified as the number %d", number) 
     # publish the trajectory
-    trajDisp.addContourPointsAndPublish(contours)
+    #trajDisp.addContourPointsAndPublish(contours)
     # move the robot
-    #ik.move(contours)
-    ik.sendJointState(0.5,0.5)
+    coordinates= ik.move(contours)
+    #ik.sendJointState(0.5,0.5)
   cv2.destroyAllWindows()

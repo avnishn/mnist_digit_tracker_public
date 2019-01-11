@@ -35,7 +35,7 @@ class DynamicsAndKinematics(object):
     theta1 = math.atan2(y,x) - gamma
     a, b = y - (l_0 * math.sin(theta1)), x - (l_0 * math.cos(theta1))
     theta2 = math.atan2(a,b) - theta1
-    return theta1, theta2
+    return theta2, theta1
 
   # simulate first order dynamics from one joint state to the next
   # return 2 arrays of joint angles that the manipulator should take 
@@ -175,7 +175,7 @@ if __name__ == '__main__':
   ik = DynamicsAndKinematics(2.2, 2.2)
   ic = image_converter()
 
-  rospy.init_node('mnist_image_subscriber', anonymous=False)
+  rospy.init_node('mnist_image_subscriber2', anonymous=False)
   rospy.Rate(50)
   try:
     rospy.spin()
