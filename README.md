@@ -1,4 +1,4 @@
-# mnist digit tracker
+# Mnist Digit Tracker
 
 Write 2 ROS nodes in a single ROS package. 
 ************************************
