@@ -8,11 +8,11 @@ project(mnist_digit_tracker)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 
-#!!!!!!!!!!!!!!!!!!!!!!!!!!
+#!!!!!!!!!!!!!!!!!!!!!!!!!!OPENCVERRORS!!!!!!!!!!!!!!!!!!!!!!!!!!#
 ## IF you get errors with opencv when running catkin_make uncomment the 
 ## next line, and input your ros distribution, and the name of your OpenCv Dir
 ## set(OpenCV_DIR /opt/ros/<your ros distribution>/share/<your OpenCv DIR>/)
-#!!!!!!!!!!!!!!!!!!!!!!!!!!
+#!!!!!!!!!!!!!!!!!!!!!!!!!!OPENCVERRORS!!!!!!!!!!!!!!!!!!!!!!!!!!#
 
 find_package(catkin REQUIRED COMPONENTS
   cv_bridge
