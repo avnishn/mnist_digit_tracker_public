@@ -7,6 +7,13 @@ project(mnist_digit_tracker)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
+
+#!!!!!!!!!!!!!!!!!!!!!!!!!!
+## IF you get errors with opencv when running catkin_make uncomment the 
+## next line, and input your ros distribution, and the name of your OpenCv Dir
+## set(OpenCV_DIR /opt/ros/<your ros distribution>/share/<your OpenCv DIR>/)
+#!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   image_transport
