@@ -83,13 +83,9 @@ Node 2: digit tracker with a 2-link manipulator (python 3.5)
 ************************************
 Overall:
 - Please, use TF (i.e. no keras or another wrapper library)  
-- put the code on github. Keep it in a private repo (github allows private repos for students, but you will have to apply for a special student pack, just google it), but share this repo with me and Yevgen. 
-   - My github: amolchanov86
-   - Yevgen Github: yevgen.chebotar@gmail.com
 - make sure you write a HIGH QUALITY CODE and you document it very well. We will check code-base structuring as well.
 - create detailed readme.md and put proper comments everywhere
 - consider performance! (you can write some thoughts about possible bottlenecks and problems in readme.md)
 - use standard code annotations for automatically generated documentation. You can check TF sources on how it is done for python (they use Sphinx, I believe)
 - try to generate documentation from annotations of your code
-
-Let me know if something is unclear. Have fun and learn things, otherwise, what is the point? ;)
+Have fun and learn things, otherwise, what is the point? ;)
