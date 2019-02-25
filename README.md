@@ -1,6 +1,6 @@
 # Mnist Digit Tracker
 
-The purpose of this project was to get a survey of some of the methods used in intelligent robotics. Things I aimed to learn about included ROS, Tensorflow, OpenCv, signal filtering, etc.
+The purpose of this project was to get a survey of some of the methods used in intelligent robotics projects. Things I aimed to learn about included ROS, Tensorflow, OpenCv, signal filtering, etc.
 
 ************************************
 
